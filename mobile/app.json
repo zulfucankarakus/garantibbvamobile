@@ -1,0 +1,72 @@
+{
+  "expo": {
+    "name": "Garanti BBVA Mobile",
+    "slug": "garanti-bbva-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#00A19A"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.garantibbva.mobile",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "Bu uygulama sesli komutlarınızı anlamak için mikrofon kullanır.",
+        "NSMicrophoneUsageDescription": "Bu uygulama sesli komutlarınızı kaydetmek için mikrofon kullanır.",
+        "NSCameraUsageDescription": "Bu uygulama ürün fotoğrafları çekmek için kamera kullanır.",
+        "NSPhotoLibraryUsageDescription": "Bu uygulama galeriden fotoğraf seçmek için erişim gerektirir.",
+        "NSLocationWhenInUseUsageDescription": "Bu uygulama size en yakın banka şubesini göstermek için konum bilgisi kullanır."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#00A19A"
+      },
+      "package": "com.garantibbva.mobile",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Kamerayı kullanarak ürünlerin fotoğrafını çekin."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Galeriden fotoğraf seçmek için izin gereklidir."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "En yakın banka şubesini göstermek için konum bilgisi kullanılır."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "garanti-bbva-mobile"
+      }
+    }
+  }
+}

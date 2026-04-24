@@ -1,0 +1,33 @@
+# Production Backend Dockerfile
+FROM python:3.11-slim
+
+# Güvenlik ve performans için non-root user
+RUN useradd -m -u 1000 appuser
+
+# Çalışma dizini
+WORKDIR /app
+
+# Sistem paketleri
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python bağımlılıklarını kopyala ve yükle
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Uygulama kodunu kopyala
+COPY --chown=appuser:appuser . .
+
+# Non-root user'a geç
+USER appuser
+
+# Port açıkla
+EXPOSE 8001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD python -c "import requests; requests.get('http://localhost:8001/api/wealth-categories')"
+
+# Production modunda çalıştır (--reload olmadan)
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "4"]

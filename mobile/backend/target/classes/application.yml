@@ -1,0 +1,54 @@
+server:
+  port: 8001
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: garanti-bbva-mobile
+  
+  data:
+    mongodb:
+      uri: ${MONGO_URL:mongodb://localhost:27017}
+      database: ${DB_NAME:garanti_bbva}
+  
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET_KEY:garanti-bbva-secret-key-2025-change-in-production-must-be-256-bits-long}
+  expiration: 604800000 # 7 days in milliseconds
+
+# CORS Configuration
+cors:
+  allowed-origins: "*"
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: "*"
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.garantibbva: DEBUG
+    org.springframework.security: DEBUG
+
+# API Keys (for external integrations)
+external:
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+  collectapi:
+    api-key: ${COLLECTAPI_KEY:}
+
+# Springdoc OpenAPI
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha

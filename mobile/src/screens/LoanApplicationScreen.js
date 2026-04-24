@@ -1,0 +1,478 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Header } from '../components/Header';
+import { colors, spacing, fontSize, borderRadius } from '../utils/theme';
+import api from '../config/api';
+
+export default function LoanApplicationScreen({ route, navigation }) {
+  const { productName, price, loan_type, term, monthly_payment, interest_rate } = route.params || {};
+  
+  console.log('LoanApplicationScreen params:', route.params);
+  console.log('Price:', price, 'ProductName:', productName);
+  
+  const [formData, setFormData] = useState({
+    monthly_income: '',
+    occupation: '',
+    employer: '',
+    work_duration: '',
+    requested_amount: price ? price.toString() : '',
+    term_months: term ? term.toString() : '24',
+  });
+  
+  const [loading, setLoading] = useState(false);
+  const [documentsUploaded, setDocumentsUploaded] = useState({
+    identity: false,
+    income: false,
+    signature: false,
+  });
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleDocumentUpload = (docType) => {
+    // Simüle edilmiş belge yükleme
+    const docNames = {
+      identity: 'Kimlik belgesi',
+      income: 'Gelir belgesi',
+      signature: 'İmza sirküleri'
+    };
+
+    Alert.alert(
+      'Belge Yükleme',
+      `${docNames[docType]} yükleniyor...`,
+      [
+        {
+          text: 'Simüle Et',
+          onPress: () => {
+            setDocumentsUploaded(prev => ({ ...prev, [docType]: true }));
+            setTimeout(() => {
+              Alert.alert('✅ Başarılı', `${docNames[docType]} yüklendi!`);
+            }, 500);
+          }
+        },
+        { text: 'İptal', style: 'cancel' }
+      ]
+    );
+  };
+
+  const handleSubmit = async () => {
+    console.log('Submit button pressed');
+    console.log('Form data:', formData);
+    console.log('Documents:', documentsUploaded);
+    
+    // Temel validasyon
+    if (!formData.requested_amount || parseFloat(formData.requested_amount) <= 0) {
+      Alert.alert('Uyarı', 'Lütfen talep edilen kredi tutarını girin');
+      return;
+    }
+    
+    if (!formData.monthly_income) {
+      Alert.alert('Uyarı', 'Lütfen aylık gelir bilgisini girin');
+      return;
+    }
+    
+    if (!formData.occupation) {
+      Alert.alert('Uyarı', 'Lütfen meslek bilgisini girin');
+      return;
+    }
+
+    // Belge kontrolü - en az kimlik belgesi olmalı
+    if (!documentsUploaded.identity) {
+      Alert.alert('Uyarı', 'Lütfen en azından kimlik belgenizi yükleyin');
+      return;
+    }
+
+    const creditAmount = parseFloat(formData.requested_amount) || 0;
+    console.log('Credit amount to apply:', creditAmount);
+
+    try {
+      setLoading(true);
+      console.log('Making API request...');
+
+      // Kredi başvurusu yap
+      const requestData = {
+        loan_type: loan_type || 'consumer_loan',
+        amount: creditAmount,
+        term: parseInt(formData.term_months) || 24,
+        monthly_payment: monthly_payment || 0,
+        interest_rate: interest_rate || 3.9,
+        applicant_info: {
+          monthly_income: parseFloat(formData.monthly_income) || 0,
+          occupation: formData.occupation || '',
+          employer: formData.employer || '',
+          work_duration: formData.work_duration || '',
+        }
+      };
+      
+      console.log('Request data:', JSON.stringify(requestData));
+      
+      const response = await api.post('/credit/apply', requestData);
+      
+      console.log('Response:', JSON.stringify(response.data));
+
+      if (response.data.success) {
+        const applicationId = response.data.data?.application_id || 'N/A';
+        
+        console.log('Application successful. Credit amount:', creditAmount);
+        
+        // Yüksek meblağlı krediler için şube ekranına yönlendir
+        // 50.000 TL üzeri yüksek meblağlı kabul edilir
+        if (creditAmount >= 50000) {
+          console.log('Navigating to BranchLocator...');
+          navigation.replace('BranchLocator', {
+            applicationId: applicationId,
+            amount: creditAmount,
+            productName: productName || 'Kredi',
+          });
+        } else {
+          console.log('Showing alert (amount < 50000)');
+          // Düşük meblağlı krediler için normal onay mesajı
+          Alert.alert(
+            '✅ Başvuru Alındı!',
+            `Kredi başvurunuz başarıyla alındı.\n\nBaşvuru No: ${applicationId}\n\nDurumunuz 1-2 iş günü içinde bildirilecektir.`,
+            [
+              {
+                text: 'Tamam',
+                onPress: () => {
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'Main' }],
+                  });
+                }
+              }
+            ]
+          );
+        }
+      } else {
+        Alert.alert('Hata', response.data?.message || 'Başvuru gönderilemedi');
+      }
+    } catch (error) {
+      console.error('Loan application error:', error);
+      console.error('Error message:', error.message);
+      console.error('Error response:', error.response?.data);
+      
+      let errorMessage = 'Başvuru gönderilemedi. Lütfen tekrar deneyin.';
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Hata', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Header title="Kredi Başvurusu" onBack={() => navigation.goBack()} />
+      
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Başvuru Özeti */}
+        <View style={styles.applicationSummary}>
+          <Ionicons name="business" size={48} color={colors.primary} />
+          <Text style={styles.productName}>{productName || 'Kredi Başvurusu'}</Text>
+          <Text style={styles.loanAmount}>{(price || 0).toLocaleString('tr-TR')} TL</Text>
+          {term && monthly_payment && (
+            <Text style={styles.loanTerms}>
+              {term} ay × {monthly_payment.toLocaleString('tr-TR')} TL {interest_rate ? `(%${interest_rate.toFixed(1)} faiz)` : ''}
+            </Text>
+          )}
+        </View>
+
+        {/* Form */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Başvuru Bilgileri</Text>
+          
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Talep Edilen Tutar (TL) *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Örn: 100000"
+              keyboardType="numeric"
+              value={formData.requested_amount}
+              onChangeText={(val) => handleInputChange('requested_amount', val)}
+            />
+          </View>
+          
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Aylık Gelir (TL) *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Örn: 45000"
+              keyboardType="numeric"
+              value={formData.monthly_income}
+              onChangeText={(val) => handleInputChange('monthly_income', val)}
+            />
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Meslek *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Örn: Yazılım Geliştirici"
+              value={formData.occupation}
+              onChangeText={(val) => handleInputChange('occupation', val)}
+            />
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>İşveren *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Örn: ABC Teknoloji A.Ş."
+              value={formData.employer}
+              onChangeText={(val) => handleInputChange('employer', val)}
+            />
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Çalışma Süresi (Yıl) *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Örn: 3"
+              keyboardType="numeric"
+              value={formData.work_duration}
+              onChangeText={(val) => handleInputChange('work_duration', val)}
+            />
+          </View>
+        </View>
+
+        {/* Belge Yükleme */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Gerekli Belgeler</Text>
+          
+          <TouchableOpacity
+            style={[styles.documentCard, documentsUploaded.identity && styles.documentCardUploaded]}
+            onPress={() => handleDocumentUpload('identity')}
+          >
+            <View style={styles.documentHeader}>
+              <Ionicons 
+                name={documentsUploaded.identity ? "checkmark-circle" : "document-outline"} 
+                size={32} 
+                color={documentsUploaded.identity ? colors.success : colors.primary} 
+              />
+              <View style={styles.documentInfo}>
+                <Text style={styles.documentTitle}>Kimlik Belgesi</Text>
+                <Text style={styles.documentSubtitle}>
+                  {documentsUploaded.identity ? 'Yüklendi ✓' : 'Nüfus cüzdanı veya ehliyet'}
+                </Text>
+              </View>
+            </View>
+            {!documentsUploaded.identity && (
+              <Ionicons name="cloud-upload-outline" size={24} color={colors.primary} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.documentCard, documentsUploaded.income && styles.documentCardUploaded]}
+            onPress={() => handleDocumentUpload('income')}
+          >
+            <View style={styles.documentHeader}>
+              <Ionicons 
+                name={documentsUploaded.income ? "checkmark-circle" : "document-text-outline"} 
+                size={32} 
+                color={documentsUploaded.income ? colors.success : colors.primary} 
+              />
+              <View style={styles.documentInfo}>
+                <Text style={styles.documentTitle}>Gelir Belgesi</Text>
+                <Text style={styles.documentSubtitle}>
+                  {documentsUploaded.income ? 'Yüklendi ✓' : 'Maaş bordrosu veya muhtasar'}
+                </Text>
+              </View>
+            </View>
+            {!documentsUploaded.income && (
+              <Ionicons name="cloud-upload-outline" size={24} color={colors.primary} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.documentCard, documentsUploaded.signature && styles.documentCardUploaded]}
+            onPress={() => handleDocumentUpload('signature')}
+          >
+            <View style={styles.documentHeader}>
+              <Ionicons 
+                name={documentsUploaded.signature ? "checkmark-circle" : "create-outline"} 
+                size={32} 
+                color={documentsUploaded.signature ? colors.success : colors.primary} 
+              />
+              <View style={styles.documentInfo}>
+                <Text style={styles.documentTitle}>İmza Sirküleri</Text>
+                <Text style={styles.documentSubtitle}>
+                  {documentsUploaded.signature ? 'Yüklendi ✓' : 'Banka imza örneği'}
+                </Text>
+              </View>
+            </View>
+            {!documentsUploaded.signature && (
+              <Ionicons name="cloud-upload-outline" size={24} color={colors.primary} />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Submit Butonu */}
+        <View style={styles.bottomContainer}>
+          <TouchableOpacity
+            style={[
+              styles.submitButton,
+              loading && styles.submitButtonDisabled
+            ]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            <LinearGradient
+              colors={[colors.primary, colors.secondary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.submitButtonGradient}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="send" size={24} color="#fff" />
+                  <Text style={styles.submitButtonText}>Başvuruyu Gönder</Text>
+                </>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  applicationSummary: {
+    padding: spacing.xl,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    alignItems: 'center',
+  },
+  productName: {
+    fontSize: fontSize.large,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  loanAmount: {
+    fontSize: fontSize.xxlarge,
+    fontWeight: '700',
+    color: colors.primary,
+    marginBottom: spacing.xs,
+  },
+  loanTerms: {
+    fontSize: fontSize.medium,
+    color: colors.textSecondary,
+  },
+  section: {
+    padding: spacing.lg,
+  },
+  sectionTitle: {
+    fontSize: fontSize.large,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  formGroup: {
+    marginBottom: spacing.md,
+  },
+  label: {
+    fontSize: fontSize.medium,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.medium,
+    padding: spacing.md,
+    fontSize: fontSize.medium,
+    color: colors.text,
+  },
+  documentCard: {
+    backgroundColor: '#fff',
+    padding: spacing.lg,
+    borderRadius: borderRadius.medium,
+    marginBottom: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.border,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  documentCardUploaded: {
+    borderColor: colors.success,
+    backgroundColor: colors.successLight,
+  },
+  documentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    flex: 1,
+  },
+  documentInfo: {
+    flex: 1,
+  },
+  documentTitle: {
+    fontSize: fontSize.medium,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  documentSubtitle: {
+    fontSize: fontSize.small,
+    color: colors.textSecondary,
+  },
+  bottomContainer: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  submitButton: {
+    borderRadius: borderRadius.medium,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
+  },
+  submitButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: fontSize.large,
+    fontWeight: '700',
+  },
+});

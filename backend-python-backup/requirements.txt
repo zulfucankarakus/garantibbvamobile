@@ -137,4 +137,7 @@ anthropic==0.39.0
 google-cloud-vision==3.8.1
 
 beautifulsoup4
-bs4==beautifulsoup4
+bs4
+
+# PyTorch Deep Learning
+torch>=2.0.0

@@ -34,6 +34,9 @@ from product_scraper import product_scraper
 from smart_investment_advisor import smart_advisor
 import uuid
 
+# Deep Learning modulleri
+from deep_learning.routes import deep_learning_router
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -1937,6 +1940,187 @@ async def apply_for_credit(
     except Exception as e:
         logger.error(f"Credit application error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# VISION PARSE QUERY - Akıllı Sesli Sorgu Analizi
+# ============================================================================
+
+# Bilinen markalar ve kategorileri
+BRAND_CATEGORIES = {
+    # Araçlar
+    "bmw": "vehicle", "mercedes": "vehicle", "audi": "vehicle",
+    "toyota": "vehicle", "honda": "vehicle", "ford": "vehicle",
+    "volkswagen": "vehicle", "renault": "vehicle", "fiat": "vehicle",
+    "peugeot": "vehicle", "hyundai": "vehicle", "kia": "vehicle",
+    "volvo": "vehicle", "tesla": "vehicle", "porsche": "vehicle",
+    "opel": "vehicle", "nissan": "vehicle", "mazda": "vehicle",
+    # Elektronik
+    "iphone": "electronics", "samsung": "electronics", "apple": "electronics",
+    "xiaomi": "electronics", "huawei": "electronics", "oppo": "electronics",
+    "sony": "electronics", "lg": "electronics", "dell": "electronics",
+    "hp": "electronics", "lenovo": "electronics", "asus": "electronics",
+    "macbook": "electronics", "ipad": "electronics", "playstation": "electronics",
+    "xbox": "electronics", "nintendo": "electronics", "logitech": "electronics",
+    # Ev eşyası
+    "bosch": "home", "siemens": "home", "arçelik": "home",
+    "beko": "home", "vestel": "home", "dyson": "home",
+    # Giyim
+    "nike": "clothing", "adidas": "clothing", "puma": "clothing",
+    "zara": "clothing", "mango": "clothing", "lcw": "clothing",
+}
+
+# Görsel tarama tetikleyici kelimeler
+VISUAL_TRIGGER_WORDS = [
+    "bunu", "şunu", "bu", "şu", "buna", "şuna", "bunun", "şunun",
+    "görüyorum", "bakıyorum", "karşımda", "önümde", "elimde",
+    "buradaki", "şuradaki", "ekrandaki", "gösteriyorum"
+]
+
+def extract_product_from_query(query: str) -> dict:
+    """Sorgudan ürün adı ve kategori çıkar"""
+    import re
+    
+    query_lower = query.lower().strip()
+    
+    # Görsel tetikleyici var mı?
+    for trigger in VISUAL_TRIGGER_WORDS:
+        if trigger in query_lower:
+            return {"needs_visual": True, "reason": "visual_reference_detected"}
+    
+    # Bilinen marka ara
+    for brand, category in BRAND_CATEGORIES.items():
+        if brand in query_lower:
+            # Marka bulundu, tam ürün adını çıkar
+            words = query.split()
+            product_words = []
+            found_brand = False
+            
+            for word in words:
+                word_lower = word.lower()
+                if brand in word_lower:
+                    found_brand = True
+                
+                if found_brand:
+                    # Durdurucu kelimeler
+                    if word_lower in ["nasıl", "almak", "satın", "fiyat", "kaç", "istiyorum", 
+                                     "ister", "alabilir", "misin", "için", "ne", "kadar"]:
+                        break
+                    product_words.append(word)
+                    if len(product_words) >= 4:
+                        break
+            
+            if product_words:
+                product_name = " ".join(product_words)
+                # İlk harfleri büyük yap
+                product_name = " ".join(w.capitalize() if not w[0].isdigit() else w.upper() 
+                                       for w in product_name.split())
+                return {
+                    "needs_visual": False,
+                    "product_name": product_name,
+                    "category": category,
+                    "confidence": 0.9
+                }
+    
+    # Regex ile ürün adı çıkarmayı dene
+    patterns = [
+        r'([a-zA-ZğüşöçıİĞÜŞÖÇ]+\s*[a-zA-Z0-9ğüşöçıİĞÜŞÖÇ\-\.]+(?:\s+[a-zA-Z0-9\-\.]+)?)\s*(?:nasıl|almak|satın|fiyat|kaç|ne kadar)',
+        r'(?:nasıl|almak|satın|fiyat).*?([a-zA-ZğüşöçıİĞÜŞÖÇ]+\s*[a-zA-Z0-9ğüşöçıİĞÜŞÖÇ\-\.]+(?:\s+[a-zA-Z0-9\-\.]+)?)'
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, query, re.IGNORECASE)
+        if match:
+            potential_product = match.group(1).strip()
+            
+            # Çok kısa veya genel kelime mi?
+            generic_words = ["bir", "bu", "şu", "o", "ve", "ile", "için", "nasıl", "ne", "kaç"]
+            if len(potential_product) > 2 and potential_product.lower() not in generic_words:
+                # Kategori tahmin et
+                category = "other"
+                lower_product = potential_product.lower()
+                
+                if any(w in lower_product for w in ["araba", "araç", "otomobil", "suv", "sedan"]):
+                    category = "vehicle"
+                elif any(w in lower_product for w in ["telefon", "laptop", "bilgisayar", "tablet", "tv"]):
+                    category = "electronics"
+                elif any(w in lower_product for w in ["buzdolabı", "çamaşır", "bulaşık", "fırın", "klima"]):
+                    category = "home"
+                
+                return {
+                    "needs_visual": False,
+                    "product_name": potential_product.title(),
+                    "category": category,
+                    "confidence": 0.7
+                }
+    
+    # Hiçbir şey bulunamadı
+    return {"needs_visual": True, "reason": "no_product_detected"}
+
+@api_router.post("/vision/parse-query")
+async def parse_voice_query(
+    request: Dict[str, Any],
+    user: dict = Depends(get_current_user)
+):
+    """
+    🎤 Sesli Sorgu Analizi - Akıllı Ürün Tespiti
+    
+    Kullanıcının sesli sorgusunu analiz eder:
+    - Ürün adı belirtilmişse: needs_visual = false, ürün bilgisi döner
+    - "bunu", "şunu" gibi kelimeler varsa: needs_visual = true, görsel tarama gerekli
+    - Ürün tespit edilemezse: needs_visual = true
+    
+    Örnek:
+    - "BMW X3 nasıl alabilirim?" -> needs_visual: false, product: "BMW X3"
+    - "Bunu nasıl alabilirim?" -> needs_visual: true
+    """
+    try:
+        query = request.get("query", "").strip()
+        
+        if not query:
+            return {
+                "success": False,
+                "needs_visual": True,
+                "reason": "empty_query",
+                "message": "Sorgu boş olamaz"
+            }
+        
+        logger.info(f"🎤 Parsing voice query: {query}")
+        
+        # Ürün bilgisi çıkar
+        result = extract_product_from_query(query)
+        
+        if result.get("needs_visual"):
+            logger.info(f"👁️ Visual scan required: {result.get('reason')}")
+            return {
+                "success": True,
+                "needs_visual": True,
+                "reason": result.get("reason", "no_product_detected"),
+                "message": "Görsel tarama gerekli. Lütfen ürünü kameraya gösterin."
+            }
+        else:
+            product_name = result.get("product_name")
+            category = result.get("category")
+            confidence = result.get("confidence", 0.8)
+            
+            logger.info(f"✅ Product detected: {product_name} ({category}) - confidence: {confidence}")
+            
+            return {
+                "success": True,
+                "needs_visual": False,
+                "product_name": product_name,
+                "category": category,
+                "confidence": confidence,
+                "message": f"{product_name} için arama yapılıyor..."
+            }
+        
+    except Exception as e:
+        logger.error(f"Parse query error: {e}")
+        return {
+            "success": False,
+            "needs_visual": True,
+            "reason": "error",
+            "message": str(e)
+        }
 
 @api_router.post("/vision/voice-command")
 async def process_voice_command(
@@ -3898,6 +4082,9 @@ async def simulate_credit_scenario(
 
 # Include the router in the main app AFTER all endpoints are defined
 app.include_router(api_router)
+
+# Deep Learning router
+app.include_router(deep_learning_router)
 
 app.add_middleware(
     CORSMiddleware,

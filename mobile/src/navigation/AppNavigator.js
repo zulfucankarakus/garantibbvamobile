@@ -47,6 +47,14 @@ import InvestmentPortfolioScreen from '../screens/InvestmentPortfolioScreen';
 import SavingsGoalDetailScreen from '../screens/SavingsGoalDetailScreen';
 import SmartInvestmentScreen from '../screens/SmartInvestmentScreen';
 
+// Deep Learning Screens
+import {
+  AIPredictionCenterScreen,
+  CreditSimulatorScreen,
+  TransactionSecurityScreen,
+  MarketRadarScreen,
+} from '../screens/DeepLearning';
+
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -162,6 +170,11 @@ export default function Navigation() {
             <Stack.Screen name="InvestmentPortfolio" component={InvestmentPortfolioScreen} />
             <Stack.Screen name="SavingsGoalDetail" component={SavingsGoalDetailScreen} />
             <Stack.Screen name="SmartInvestment" component={SmartInvestmentScreen} />
+            {/* Deep Learning Screens */}
+            <Stack.Screen name="AIPredictionCenter" component={AIPredictionCenterScreen} />
+            <Stack.Screen name="CreditSimulator" component={CreditSimulatorScreen} />
+            <Stack.Screen name="TransactionSecurity" component={TransactionSecurityScreen} />
+            <Stack.Screen name="MarketRadar" component={MarketRadarScreen} />
           </>
         )}
       </Stack.Navigator>

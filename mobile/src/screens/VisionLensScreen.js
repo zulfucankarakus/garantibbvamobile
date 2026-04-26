@@ -16,6 +16,7 @@ import { Header } from '../components/Header';
 import { colors, spacing, fontSize, borderRadius } from '../utils/theme';
 import { analyzeImage, getFinancialAdvice } from '../services/visionService';
 import { scrapePrices } from '../services/investmentService';
+import api from '../config/api';
 
 export default function VisionLensScreen({ navigation }) {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -24,6 +25,9 @@ export default function VisionLensScreen({ navigation }) {
   const [financialAdvice, setFinancialAdvice] = useState(null);
   const [scrapingPrices, setScrapingPrices] = useState(false);
   const [priceComparison, setPriceComparison] = useState(null);
+  // CNN Deep Learning State
+  const [cnnResult, setCnnResult] = useState(null);
+  const [cnnLoading, setCnnLoading] = useState(false);
 
   const pickImage = async (useCamera = false) => {
     try {
@@ -107,6 +111,23 @@ export default function VisionLensScreen({ navigation }) {
         
         // 3. Fiyat karşılaştırması yap (web scraping)
         handlePriceScraping(analyzeResponse.data.object_data);
+        
+        // 4. CNN Deep Learning sınıflandırması
+        const labels = [];
+        if (analyzeResponse.data.object_data?.object_name) {
+          labels.push(analyzeResponse.data.object_data.object_name);
+        }
+        if (analyzeResponse.data.object_data?.category) {
+          labels.push(analyzeResponse.data.object_data.category);
+        }
+        if (analyzeResponse.data.object_data?.description) {
+          // Description'dan anahtar kelimeler çıkar
+          const words = analyzeResponse.data.object_data.description.split(' ').slice(0, 5);
+          labels.push(...words);
+        }
+        if (labels.length > 0) {
+          handleCnnClassification(labels);
+        }
       } else {
         Alert.alert('Hata', analyzeResponse.error || 'Analiz başarısız oldu');
       }
@@ -135,6 +156,26 @@ export default function VisionLensScreen({ navigation }) {
     setAnalysisResult(null);
     setFinancialAdvice(null);
     setPriceComparison(null);
+    setCnnResult(null);
+  };
+  
+  // CNN Deep Learning Product Classification
+  const handleCnnClassification = async (labels) => {
+    try {
+      setCnnLoading(true);
+      const response = await api.post('/deep-learning/product-classification', {
+        image_data: selectedImage?.base64 || '',
+        detected_labels: labels || []
+      });
+      
+      if (response.data?.success) {
+        setCnnResult(response.data);
+      }
+    } catch (error) {
+      console.error('CNN classification error:', error);
+    } finally {
+      setCnnLoading(false);
+    }
   };
   
   const handlePriceScraping = async (objectData) => {
@@ -444,6 +485,86 @@ export default function VisionLensScreen({ navigation }) {
                     <ActivityIndicator size="small" color={colors.primary} />
                     <Text style={styles.scrapingText}>Güncel fiyatlar kontrol ediliyor...</Text>
                   </View>
+                )}
+              </View>
+            )}
+
+            {/* 🧠 CNN Deep Learning Sınıflandırma */}
+            {(cnnResult || cnnLoading) && (
+              <View style={styles.cnnContainer}>
+                <LinearGradient
+                  colors={['#7C3AED', '#8B5CF6']}
+                  style={styles.cnnHeader}
+                >
+                  <Ionicons name="hardware-chip" size={24} color="white" />
+                  <Text style={styles.cnnHeaderTitle}>🧠 CNN Derin Öğrenme Analizi</Text>
+                </LinearGradient>
+
+                {cnnLoading ? (
+                  <View style={styles.cnnLoading}>
+                    <ActivityIndicator size="large" color="#8B5CF6" />
+                    <Text style={styles.cnnLoadingText}>CNN modeli analiz ediyor...</Text>
+                  </View>
+                ) : cnnResult && cnnResult.success && (
+                  <>
+                    {/* Ana Sınıflandırma Sonucu */}
+                    <View style={styles.cnnMainResult}>
+                      <Text style={styles.cnnEmoji}>{cnnResult.predicted_emoji}</Text>
+                      <View style={styles.cnnMainInfo}>
+                        <Text style={styles.cnnPredictedName}>{cnnResult.predicted_name}</Text>
+                        <Text style={styles.cnnConfidence}>
+                          Güven: %{cnnResult.confidence?.toFixed(1)} {cnnResult.confidence_level}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Top 3 Tahminler */}
+                    <View style={styles.cnnTop3Container}>
+                      <Text style={styles.cnnTop3Title}>📊 En Olası Kategoriler</Text>
+                      {cnnResult.top_3_predictions?.map((pred, index) => (
+                        <View key={index} style={styles.cnnTop3Item}>
+                          <View style={styles.cnnTop3Left}>
+                            <Text style={styles.cnnTop3Rank}>#{index + 1}</Text>
+                            <Text style={styles.cnnTop3Emoji}>{pred.emoji}</Text>
+                            <Text style={styles.cnnTop3Name}>{pred.name}</Text>
+                          </View>
+                          <View style={styles.cnnTop3Right}>
+                            <View style={styles.cnnTop3BarContainer}>
+                              <View 
+                                style={[
+                                  styles.cnnTop3Bar, 
+                                  { width: `${pred.probability}%` }
+                                ]} 
+                              />
+                            </View>
+                            <Text style={styles.cnnTop3Percent}>%{pred.probability?.toFixed(1)}</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+
+                    {/* Finansal Kategori */}
+                    <View style={styles.cnnFinancialCategory}>
+                      <Ionicons name="cash" size={20} color="#10B981" />
+                      <Text style={styles.cnnFinancialText}>{cnnResult.financial_category}</Text>
+                    </View>
+
+                    {/* Ortalama Fiyat Aralığı */}
+                    <View style={styles.cnnPriceRange}>
+                      <Text style={styles.cnnPriceRangeLabel}>Kategori Fiyat Aralığı</Text>
+                      <Text style={styles.cnnPriceRangeValue}>{cnnResult.avg_price_range}</Text>
+                    </View>
+
+                    {/* Model Bilgisi */}
+                    <View style={styles.cnnModelInfo}>
+                      <Text style={styles.cnnModelTitle}>🔬 Model Detayları</Text>
+                      <Text style={styles.cnnModelText}>
+                        • Tip: {cnnResult.model_info?.type}{'\n'}
+                        • Framework: {cnnResult.model_info?.framework}{'\n'}
+                        • Pretrained: {cnnResult.model_info?.pretrained}
+                      </Text>
+                    </View>
+                  </>
                 )}
               </View>
             )}
@@ -1151,5 +1272,167 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.textSecondary,
     marginLeft: spacing.sm,
+  },
+  // CNN Deep Learning Styles
+  cnnContainer: {
+    marginVertical: spacing.md,
+    backgroundColor: 'white',
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  cnnHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+  },
+  cnnHeaderTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: 'white',
+    marginLeft: spacing.sm,
+  },
+  cnnLoading: {
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  cnnLoadingText: {
+    fontSize: fontSize.sm,
+    color: '#8B5CF6',
+    marginTop: spacing.sm,
+  },
+  cnnMainResult: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    backgroundColor: '#F5F3FF',
+  },
+  cnnEmoji: {
+    fontSize: 48,
+    marginRight: spacing.md,
+  },
+  cnnMainInfo: {
+    flex: 1,
+  },
+  cnnPredictedName: {
+    fontSize: fontSize.xl,
+    fontWeight: '700',
+    color: '#5B21B6',
+  },
+  cnnConfidence: {
+    fontSize: fontSize.sm,
+    color: '#7C3AED',
+    marginTop: spacing.xs,
+  },
+  cnnTop3Container: {
+    padding: spacing.md,
+  },
+  cnnTop3Title: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  cnnTop3Item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  cnnTop3Left: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cnnTop3Rank: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+    color: '#8B5CF6',
+    width: 24,
+  },
+  cnnTop3Emoji: {
+    fontSize: 20,
+    marginRight: spacing.sm,
+  },
+  cnnTop3Name: {
+    fontSize: fontSize.sm,
+    color: colors.text,
+  },
+  cnnTop3Right: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginLeft: spacing.md,
+    justifyContent: 'flex-end',
+  },
+  cnnTop3BarContainer: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 4,
+    marginRight: spacing.sm,
+    maxWidth: 100,
+  },
+  cnnTop3Bar: {
+    height: '100%',
+    backgroundColor: '#8B5CF6',
+    borderRadius: 4,
+  },
+  cnnTop3Percent: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: '#8B5CF6',
+    width: 45,
+    textAlign: 'right',
+  },
+  cnnFinancialCategory: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#D1FAE5',
+    padding: spacing.md,
+    marginHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  cnnFinancialText: {
+    fontSize: fontSize.sm,
+    color: '#065F46',
+    marginLeft: spacing.sm,
+    flex: 1,
+  },
+  cnnPriceRange: {
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  cnnPriceRangeLabel: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  cnnPriceRangeValue: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: colors.primary,
+    marginTop: spacing.xs,
+  },
+  cnnModelInfo: {
+    backgroundColor: '#F3F4F6',
+    padding: spacing.md,
+    margin: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  cnnModelTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  cnnModelText: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    lineHeight: 18,
   },
 });

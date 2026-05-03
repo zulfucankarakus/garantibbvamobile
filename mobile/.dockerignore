@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+
+# node_modules yeniden kurulsun
+node_modules
+
+# Java backend (bu imajda gereksiz)
+backend
+backend_python
+
+# iOS/Android build artifacts
+ios/build
+android/build
+android/app/build
+android/.gradle
+
+# Expo
+.expo
+.expo-shared
+dist
+web-build
+
+# Env
+.env
+.env.local
+
+# IDE
+.vscode
+.idea
+*.log
+
+# Docker meta
+.dockerignore
+Dockerfile
+
+# Dokumantasyon
+README.md

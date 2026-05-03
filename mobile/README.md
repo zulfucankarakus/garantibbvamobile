@@ -37,7 +37,30 @@ React Native (Expo) mobil uygulama ve Java Spring Boot backend API.
 
 ## 🚀 Başlangıç
 
-### Backend (Java Spring Boot)
+> 📌 **AKTİF backend Python FastAPI**'dir (`/app/backend/server.py`). LSTM tabanlı **Deep Learning** özelliği bu backend'in içinde yer alır. Aşağıdaki Java Spring Boot komutları alternatif/legacy backend içindir; tipik akış için Python + Docker yolunu tercih edin.
+>
+> 👉 **Tek komutluk Docker kurulumu için kök dizindeki [`/app/README.md`](../README.md) dosyasına bakın.**
+
+### 🐳 Önerilen: Docker (kök dizinden)
+
+```bash
+cd /app
+docker compose up -d --build
+# MongoDB + Mongo Express + Python Backend (LSTM) tek komutla ayağa kalkar
+```
+
+### 🐍 Alternatif: Yerel Python Backend
+
+```bash
+cd /app/backend
+python3.11 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+python init_data.py && python seed_data.py
+uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+```
+
+### ☕ Alternatif: Java Spring Boot Backend (legacy, Deep Learning yok)
 
 ```bash
 cd /app/mobile/backend
@@ -52,7 +75,7 @@ java -jar target/mobile-banking-1.0.0.jar
 
 **API Docs:** http://localhost:8001/api/swagger-ui.html
 
-### Mobile (React Native)
+### 📱 Mobile (React Native)
 
 ```bash
 cd /app/mobile
@@ -60,9 +83,13 @@ cd /app/mobile
 # Bağımlılıkları yükle
 yarn install
 
-# Expo başlat
-yarn start
+# Backend URL'ini set et (Docker kullanıyorsanız bilgisayarınızın LAN IP'si)
+EXPO_PUBLIC_API_URL=http://localhost:8001/api yarn start
+# Windows PowerShell:
+#   $env:EXPO_PUBLIC_API_URL="http://localhost:8001/api"; yarn start
 ```
+
+**Hazır test girişi:** TC `12345678950` / Şifre `Test123456`
 
 ## 📋 Teknolojiler
 

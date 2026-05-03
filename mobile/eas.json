@@ -19,7 +19,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://smart-interaction.preview.emergentagent.com/api"
+        "EXPO_PUBLIC_API_URL": "https://containerized-deploy.preview.emergentagent.com/api"
       }
     },
     "production": {

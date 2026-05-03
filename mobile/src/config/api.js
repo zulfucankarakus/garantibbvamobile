@@ -3,7 +3,8 @@ import axios from 'axios';
 // Production API URL - Bu URL'i production backend'inize göre güncelleyin
 // Expo için: app.json içindeki extra alanından veya Constants kullanılabilir
 // EAS Build için: eas.json içinde environment variables tanımlanabilir
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://smart-interaction.preview.emergentagent.com/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://containerized-deploy.preview.emergentagent.com/api';
+console.log('[API] Using URL:', API_URL);
 
 // API URL'i export et (diğer dosyalarda kullanmak için)
 export const getApiUrl = () => API_URL;

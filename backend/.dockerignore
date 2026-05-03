@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+.pytest_cache
+.mypy_cache
+.venv
+venv
+env
+
+# Java / Maven (Docker imajinda Python backend kullaniliyor)
+target
+*.class
+*.jar
+*.war
+src/main/java
+src/main/resources
+pom.xml
+
+# Editor / IDE
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Loglar
+*.log
+logs
+
+# Docker meta-dosyalari container'a girmesin
+.dockerignore
+
+# Local env imaj icine sizmasin (entrypoint env vars'lari compose'tan alir)
+.env
+
+# Geliştirme dokumantasyonu
+README.md

@@ -19,6 +19,7 @@ public class Account {
     private String id;
     
     private String odtUserId;
+    
     private String accountName;
     private String accountType;
     private String accountNo;

@@ -21,6 +21,7 @@ public class SavingsPlan {
     private String id;
     
     private String odtUserId;
+    
     private String productName;
     private Double targetAmount;
     private Double monthlyContribution;

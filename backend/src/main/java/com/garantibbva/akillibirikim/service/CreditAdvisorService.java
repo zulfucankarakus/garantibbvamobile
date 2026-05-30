@@ -11,6 +11,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class CreditAdvisorService {
     
+    
     public Map<String, Object> getMilestones() {
         return Map.of(
             "milestones", EconomicParameters.getMilestones(),

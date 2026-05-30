@@ -9,4 +9,5 @@ public class ContributeRequest {
     @NotNull(message = "Tutar gerekli")
     @Positive(message = "Tutar pozitif olmalı")
     private Double amount;
+    
 }

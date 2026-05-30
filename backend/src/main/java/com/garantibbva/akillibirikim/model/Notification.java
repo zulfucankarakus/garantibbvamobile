@@ -24,4 +24,5 @@ public class Notification {
     private String notificationType;
     private Boolean read;
     private LocalDateTime createdAt;
+    
 }

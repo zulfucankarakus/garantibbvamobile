@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface FinancialGoalRepository extends MongoRepository<FinancialGoal, String> {
     List<FinancialGoal> findByOdtUserId(String userId);
+    
 }

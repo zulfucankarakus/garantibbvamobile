@@ -18,6 +18,7 @@ public class EconomicParameters {
         data.put("inflation", Map.of(
             "annual", ANNUAL_INFLATION,
             "monthly", MONTHLY_INFLATION
+            
         ));
         data.put("assetReturns", Map.of(
             "tl_savings", DEPOSIT_RATE,

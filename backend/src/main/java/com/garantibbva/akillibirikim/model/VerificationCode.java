@@ -23,4 +23,5 @@ public class VerificationCode {
     private String type;
     private LocalDateTime expiresAt;
     private LocalDateTime createdAt;
+    
 }

@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class BranchService {
+        
     
     private final List<Branch> branches = initBranches();
     

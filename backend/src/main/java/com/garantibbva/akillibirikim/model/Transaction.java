@@ -19,6 +19,7 @@ public class Transaction {
     private String id;
     
     private String odtUserId;
+    
     private String accountId;
     private String cardId;
     private String transactionType;

@@ -12,6 +12,7 @@ public class EstimateRequest {
     @JsonAlias({"product_name", "productName"})
     private String productName;
     
+    
     @NotNull(message = "Hedef tutar gerekli")
     @Positive(message = "Hedef tutar pozitif olmalı")
     @JsonAlias({"target_amount", "targetAmount"})

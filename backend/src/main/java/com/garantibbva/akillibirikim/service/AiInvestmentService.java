@@ -16,6 +16,7 @@ public class AiInvestmentService {
         // AI tabanlı dinamik dağılım
         Map<String, Double> allocation = EconomicParameters.getAiRecommendedAllocation(riskProfile);
         
+        
         // Dağılım detayları
         List<Map<String, Object>> allocationDetails = new ArrayList<>();
         Map<String, String> assetNames = Map.of(

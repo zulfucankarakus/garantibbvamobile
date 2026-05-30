@@ -10,4 +10,5 @@ import java.util.List;
 public interface SavingsPlanRepository extends MongoRepository<SavingsPlan, String> {
     List<SavingsPlan> findByOdtUserId(String userId);
     List<SavingsPlan> findByOdtUserIdAndStatus(String userId, String status);
+    
 }

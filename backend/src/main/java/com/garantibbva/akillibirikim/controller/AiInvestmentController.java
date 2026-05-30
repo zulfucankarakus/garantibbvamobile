@@ -12,6 +12,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AiInvestmentController {
     
+    
     private final AiInvestmentService aiInvestmentService;
     
     @PostMapping("/recommend")

@@ -16,7 +16,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
     
-    
     private final AuthService authService;
     
     @PostMapping("/register")

@@ -31,5 +31,4 @@ public class FinancialGoal {
     private LocalDateTime targetDate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
 }

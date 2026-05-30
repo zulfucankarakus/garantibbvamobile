@@ -13,7 +13,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class VisionController {
     
-    
     private final VisionService visionService;
     
     /**

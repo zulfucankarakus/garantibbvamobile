@@ -19,7 +19,6 @@ public class TcNoValidator {
             return false;
         }
         
-        
         // Test modunda basit doğrulama (development için)
         // 1 ile başlayan ve 11 haneli sayılar kabul edilir
         if (tcNo.startsWith("1") || tcNo.startsWith("2") || tcNo.startsWith("3") || 

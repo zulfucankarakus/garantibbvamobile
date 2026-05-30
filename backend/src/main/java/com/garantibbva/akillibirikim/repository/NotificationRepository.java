@@ -11,5 +11,4 @@ public interface NotificationRepository extends MongoRepository<Notification, St
     List<Notification> findByUserIdOrderByCreatedAtDesc(String userId);
     List<Notification> findByUserIdAndReadOrderByCreatedAtDesc(String userId, Boolean read);
     long countByUserIdAndRead(String userId, Boolean read);
-    
 }

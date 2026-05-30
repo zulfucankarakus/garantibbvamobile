@@ -19,6 +19,4 @@ public class Branch {
     private Double lng;
     private String phone;
     private String workingHours;
-    
 }
-

@@ -16,7 +16,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class NotificationController {
     
-    
     private final NotificationService notificationService;
     
     @GetMapping

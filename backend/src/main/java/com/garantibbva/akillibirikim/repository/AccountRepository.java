@@ -9,5 +9,4 @@ import java.util.List;
 @Repository
 public interface AccountRepository extends MongoRepository<Account, String> {
     List<Account> findByOdtUserId(String userId);
-    
 }

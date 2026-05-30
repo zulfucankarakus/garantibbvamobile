@@ -10,5 +10,4 @@ import java.util.Optional;
 public interface VerificationCodeRepository extends MongoRepository<VerificationCode, String> {
     Optional<VerificationCode> findByTargetAndTypeOrderByCreatedAtDesc(String target, String type);
     void deleteByTarget(String target);
-    
 }

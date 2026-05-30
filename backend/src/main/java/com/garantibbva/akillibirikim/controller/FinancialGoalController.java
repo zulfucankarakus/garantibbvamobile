@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
-
 @RestController
 @RequiredArgsConstructor
 public class FinancialGoalController {

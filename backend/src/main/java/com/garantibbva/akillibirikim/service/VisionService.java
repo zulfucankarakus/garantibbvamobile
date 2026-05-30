@@ -15,7 +15,6 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class VisionService {
     
-    
     @Value("${OPENAI_API_KEY:}")
     private String openaiApiKey;
     

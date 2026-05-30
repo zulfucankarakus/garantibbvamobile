@@ -30,5 +30,4 @@ public class Card {
     private String status;
     private String linkedAccountId;
     private LocalDateTime createdAt;
-    
 }

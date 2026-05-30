@@ -18,7 +18,6 @@ import java.util.*;
 @RequiredArgsConstructor
 public class CardController {
     
-    
     private final CardRepository cardRepository;
     private final TransactionRepository transactionRepository;
     

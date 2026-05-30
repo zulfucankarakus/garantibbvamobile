@@ -39,6 +39,5 @@ public class GlobalExceptionHandler {
         Map<String, Object> error = new HashMap<>();
         error.put("detail", "Beklenmeyen bir hata oluştu: " + ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        
     }
 }

@@ -9,5 +9,4 @@ import java.util.List;
 @Repository
 public interface CardRepository extends MongoRepository<Card, String> {
     List<Card> findByOdtUserId(String userId);
-    
 }
